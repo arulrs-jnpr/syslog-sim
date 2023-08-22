@@ -3,11 +3,11 @@ package syslog
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"regexp"
 	"time"
 )
@@ -58,8 +58,7 @@ func GetTLSServerConfig(serverCa []string, clientCa []string, clientCert string,
 	}, nil
 }
 
-func Connect(tlsConf *tls.Config) (*tls.Conn, error) {
-	hostPort := net.JoinHostPort("srx-log-terminator.mistsys.com", "6514")
+func Connect(hostPort string, tlsConf *tls.Config) (*tls.Conn, error) {
 	conn, err := tls.Dial("tcp4", hostPort, tlsConf)
 	if err != nil {
 		log.Printf("TLS conn error %v", err)
@@ -133,4 +132,13 @@ func Send(conn *tls.Conn) error {
 		return err
 	}
 	return nil
+}
+
+func SendEncoded(encodedData string, conn *tls.Conn) (int, error) {
+	encodeStr, err := base64.StdEncoding.DecodeString(encodedData)
+	if err != nil {
+		return 0, err
+	}
+	l, err := conn.Write(encodeStr)
+	return l, err
 }
